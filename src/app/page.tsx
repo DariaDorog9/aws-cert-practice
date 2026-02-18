@@ -27,8 +27,12 @@ export default function Home() {
         wrongCount={session.wrongCount}
         wrongAnswers={session.wrongAnswers}
         allAnswered={session.allAnswered}
+        categoryStats={session.categoryStats}
+        flaggedCount={session.flaggedQuestions.size}
         onResume={session.resumeQuiz}
         onStartOver={session.startOver}
+        onRetryWrong={session.retryWrongAnswers}
+        onRetryFlagged={session.retryFlaggedQuestions}
       />
     );
   }
@@ -48,8 +52,12 @@ export default function Home() {
       wrongCount={session.wrongCount}
       shuffledQuestions={session.shuffledQuestions}
       questionStatusMap={session.questionStatusMap}
+      flaggedQuestions={session.flaggedQuestions}
+      isFlagged={session.currentQuestion ? session.flaggedQuestions.has(session.currentQuestion.id) : false}
+      onToggleFlag={() => session.currentQuestion && session.toggleFlag(session.currentQuestion.id)}
       onSelectAnswer={session.selectAnswer}
       onCheckAnswer={session.checkAnswer}
+      onClearAnswer={session.clearAnswer}
       onNextQuestion={session.nextQuestion}
       onStopAndReview={session.stopAndReview}
       onJumpToQuestion={session.jumpToQuestion}

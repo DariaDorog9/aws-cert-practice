@@ -10,6 +10,7 @@ interface QuestionDrawerProps {
   questionStatusMap: Record<number, "correct" | "wrong">;
   currentIndex: number;
   onJumpToQuestion: (index: number) => void;
+  flaggedQuestions: Set<number>;
 }
 
 export function QuestionDrawer({
@@ -19,6 +20,7 @@ export function QuestionDrawer({
   questionStatusMap,
   currentIndex,
   onJumpToQuestion,
+  flaggedQuestions,
 }: QuestionDrawerProps) {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
@@ -183,7 +185,7 @@ export function QuestionDrawer({
                             )}
                           </span>
                           <span
-                            className={`text-sm ${
+                            className={`flex-1 text-sm ${
                               isCurrent
                                 ? "font-medium text-aws-dark"
                                 : "text-gray-700"
@@ -191,6 +193,23 @@ export function QuestionDrawer({
                           >
                             {truncated}
                           </span>
+                          {flaggedQuestions.has(q.id) && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="#F59E0B"
+                              stroke="#F59E0B"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="flex-shrink-0"
+                            >
+                              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                              <line x1="4" y1="22" x2="4" y2="15" />
+                            </svg>
+                          )}
                         </button>
                       </li>
                     );

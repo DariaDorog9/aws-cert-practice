@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Question, ViewState, AnsweredQuestion } from "@/types";
 import { shuffle } from "@/lib/shuffle";
 import questionsData from "@/data/questions.json";
@@ -17,6 +17,7 @@ interface SavedSession {
   wrongCount: number;
   questionStatusMap: Record<number, "correct" | "wrong">;
   wrongAnswers: { questionId: number; selectedAnswers: string[] }[];
+  flaggedQuestions: number[];
 }
 
 function saveSession(data: SavedSession) {
@@ -47,6 +48,29 @@ function clearSession() {
 
 const questionsById = new Map(allQuestions.map((q) => [q.id, q]));
 
+/** Shuffle questions within each category, categories sorted alphabetically */
+function shuffleByCategorySorted(questions: Question[]): Question[] {
+  const groups = new Map<string, Question[]>();
+  for (const q of questions) {
+    const cat = q.category || "Uncategorized";
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat)!.push(q);
+  }
+  const sortedCategories = [...groups.keys()].sort((a, b) =>
+    a.localeCompare(b)
+  );
+  const result: Question[] = [];
+  for (const cat of sortedCategories) {
+    result.push(...shuffle(groups.get(cat)!));
+  }
+  return result;
+}
+
+export type CategoryStats = Record<
+  string,
+  { total: number; correct: number; wrong: number }
+>;
+
 export function useQuizSession() {
   const [view, setView] = useState<ViewState>("landing");
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
@@ -63,6 +87,12 @@ export function useQuizSession() {
     Record<number, "correct" | "wrong">
   >({});
   const [hasSavedSession, setHasSavedSession] = useState(false);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
+    new Set()
+  );
+  const [clearedQuestions, setClearedQuestions] = useState<Set<number>>(
+    new Set()
+  );
 
   // Check for saved session on mount
   useEffect(() => {
@@ -90,6 +120,7 @@ export function useQuizSession() {
         questionId: wa.question.id,
         selectedAnswers: wa.selectedAnswers,
       })),
+      flaggedQuestions: Array.from(flaggedQuestions),
     });
   }, [
     view,
@@ -100,7 +131,36 @@ export function useQuizSession() {
     wrongCount,
     questionStatusMap,
     wrongAnswers,
+    flaggedQuestions,
   ]);
+
+  const toggleFlag = useCallback((questionId: number) => {
+    setFlaggedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(questionId)) {
+        next.delete(questionId);
+      } else {
+        next.add(questionId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Compute category stats from questionStatusMap + shuffledQuestions
+  const categoryStats = useMemo<CategoryStats>(() => {
+    const stats: CategoryStats = {};
+    for (const q of shuffledQuestions) {
+      const cat = q.category || "Uncategorized";
+      if (!stats[cat]) {
+        stats[cat] = { total: 0, correct: 0, wrong: 0 };
+      }
+      stats[cat].total++;
+      const status = questionStatusMap[q.id];
+      if (status === "correct") stats[cat].correct++;
+      else if (status === "wrong") stats[cat].wrong++;
+    }
+    return stats;
+  }, [shuffledQuestions, questionStatusMap]);
 
   const resumeSavedSession = useCallback(() => {
     const saved = loadSession();
@@ -131,6 +191,7 @@ export function useQuizSession() {
         })
         .filter((wa): wa is AnsweredQuestion => wa !== null)
     );
+    setFlaggedQuestions(new Set(saved.flaggedQuestions ?? []));
     setSelectedAnswers([]);
     setHasChecked(false);
     setIsCorrect(false);
@@ -138,7 +199,7 @@ export function useQuizSession() {
   }, []);
 
   const startSession = useCallback(() => {
-    setShuffledQuestions(shuffle([...allQuestions]));
+    setShuffledQuestions(shuffleByCategorySorted([...allQuestions]));
     setCurrentIndex(0);
     setSelectedAnswers([]);
     setHasChecked(false);
@@ -148,6 +209,8 @@ export function useQuizSession() {
     setWrongCount(0);
     setWrongAnswers([]);
     setQuestionStatusMap({});
+    setFlaggedQuestions(new Set());
+    setClearedQuestions(new Set());
     setHasSavedSession(false);
     setView("quiz");
   }, []);
@@ -176,25 +239,53 @@ export function useQuizSession() {
       selectedAnswers.length === currentQuestion.correctAnswers.length &&
       selectedAnswers.every((a) => currentQuestion.correctAnswers.includes(a));
 
+    const previousStatus = questionStatusMap[currentQuestion.id];
+
     setIsCorrect(correct);
     setHasChecked(true);
-    setAnsweredCount((c) => c + 1);
 
-    setQuestionStatusMap((prev) => ({
-      ...prev,
-      [currentQuestion.id]: correct ? "correct" : "wrong",
-    }));
+    // Remove from cleared set so jumping back shows the new result
+    setClearedQuestions((prev) => {
+      if (!prev.has(currentQuestion.id)) return prev;
+      const next = new Set(prev);
+      next.delete(currentQuestion.id);
+      return next;
+    });
 
-    if (correct) {
-      setCorrectCount((c) => c + 1);
+    if (previousStatus === "wrong") {
+      // Re-attempt: question was already counted
+      if (correct) {
+        // Flip from wrong to correct
+        setQuestionStatusMap((prev) => ({
+          ...prev,
+          [currentQuestion.id]: "correct",
+        }));
+        setCorrectCount((c) => c + 1);
+        setWrongCount((c) => c - 1);
+        setWrongAnswers((prev) =>
+          prev.filter((wa) => wa.question.id !== currentQuestion.id)
+        );
+      }
+      // If wrong again, nothing changes — status stays "wrong", counts unchanged
     } else {
-      setWrongCount((c) => c + 1);
-      setWrongAnswers((prev) => [
+      // First attempt
+      setAnsweredCount((c) => c + 1);
+      setQuestionStatusMap((prev) => ({
         ...prev,
-        { question: currentQuestion, selectedAnswers, isCorrect: false },
-      ]);
+        [currentQuestion.id]: correct ? "correct" : "wrong",
+      }));
+
+      if (correct) {
+        setCorrectCount((c) => c + 1);
+      } else {
+        setWrongCount((c) => c + 1);
+        setWrongAnswers((prev) => [
+          ...prev,
+          { question: currentQuestion, selectedAnswers, isCorrect: false },
+        ]);
+      }
     }
-  }, [currentQuestion, selectedAnswers]);
+  }, [currentQuestion, selectedAnswers, questionStatusMap]);
 
   const nextQuestion = useCallback(() => {
     const current = shuffledQuestions[currentIndex];
@@ -240,18 +331,50 @@ export function useQuizSession() {
     setIsCorrect(false);
   }, [currentIndex, shuffledQuestions, questionStatusMap]);
 
+  const clearAnswer = useCallback(() => {
+    if (currentQuestion) {
+      setClearedQuestions((prev) => {
+        const next = new Set(prev);
+        next.add(currentQuestion.id);
+        return next;
+      });
+    }
+    setSelectedAnswers([]);
+    setHasChecked(false);
+    setIsCorrect(false);
+  }, [currentQuestion]);
+
   const allAnswered = answeredCount >= shuffledQuestions.length;
 
   const stopAndReview = useCallback(() => {
     setView("review");
   }, []);
 
-  const jumpToQuestion = useCallback((index: number) => {
-    setCurrentIndex(index);
-    setSelectedAnswers([]);
-    setHasChecked(false);
-    setIsCorrect(false);
-  }, []);
+  const jumpToQuestion = useCallback(
+    (index: number) => {
+      setCurrentIndex(index);
+      const q = shuffledQuestions[index];
+      if (!q) return;
+
+      const status = questionStatusMap[q.id];
+      if (status === "wrong" && !clearedQuestions.has(q.id)) {
+        // Restore checked state so correct answers stay visible
+        const wa = wrongAnswers.find((w) => w.question.id === q.id);
+        setSelectedAnswers(wa ? wa.selectedAnswers : []);
+        setHasChecked(true);
+        setIsCorrect(false);
+      } else if (status === "correct") {
+        setSelectedAnswers(q.correctAnswers);
+        setHasChecked(true);
+        setIsCorrect(true);
+      } else {
+        setSelectedAnswers([]);
+        setHasChecked(false);
+        setIsCorrect(false);
+      }
+    },
+    [shuffledQuestions, questionStatusMap, wrongAnswers, clearedQuestions]
+  );
 
   const resumeQuiz = useCallback(() => {
     setView("quiz");
@@ -262,6 +385,42 @@ export function useQuizSession() {
     setHasSavedSession(false);
     startSession();
   }, [startSession]);
+
+  const retryWrongAnswers = useCallback(() => {
+    const wrongQuestions = wrongAnswers.map((wa) => wa.question);
+    if (wrongQuestions.length === 0) return;
+
+    setShuffledQuestions(shuffle([...wrongQuestions]));
+    setCurrentIndex(0);
+    setSelectedAnswers([]);
+    setHasChecked(false);
+    setIsCorrect(false);
+    setAnsweredCount(0);
+    setCorrectCount(0);
+    setWrongCount(0);
+    setWrongAnswers([]);
+    setQuestionStatusMap({});
+    setClearedQuestions(new Set());
+    setView("quiz");
+  }, [wrongAnswers]);
+
+  const retryFlaggedQuestions = useCallback(() => {
+    const flaggedQs = allQuestions.filter((q) => flaggedQuestions.has(q.id));
+    if (flaggedQs.length === 0) return;
+
+    setShuffledQuestions(shuffle([...flaggedQs]));
+    setCurrentIndex(0);
+    setSelectedAnswers([]);
+    setHasChecked(false);
+    setIsCorrect(false);
+    setAnsweredCount(0);
+    setCorrectCount(0);
+    setWrongCount(0);
+    setWrongAnswers([]);
+    setQuestionStatusMap({});
+    setClearedQuestions(new Set());
+    setView("quiz");
+  }, [flaggedQuestions]);
 
   return {
     view,
@@ -278,6 +437,8 @@ export function useQuizSession() {
     shuffledQuestions,
     questionStatusMap,
     hasSavedSession,
+    flaggedQuestions,
+    categoryStats,
     totalQuestions: allQuestions.length,
     startSession,
     resumeSavedSession,
@@ -288,5 +449,9 @@ export function useQuizSession() {
     stopAndReview,
     resumeQuiz,
     startOver,
+    toggleFlag,
+    clearAnswer,
+    retryWrongAnswers,
+    retryFlaggedQuestions,
   };
 }

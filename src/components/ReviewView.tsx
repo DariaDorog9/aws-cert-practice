@@ -1,4 +1,5 @@
 import { AnsweredQuestion } from "@/types";
+import { CategoryStats } from "@/hooks/useQuizSession";
 
 interface ReviewViewProps {
   answeredCount: number;
@@ -6,8 +7,12 @@ interface ReviewViewProps {
   wrongCount: number;
   wrongAnswers: AnsweredQuestion[];
   allAnswered: boolean;
+  categoryStats: CategoryStats;
+  flaggedCount: number;
   onResume: () => void;
   onStartOver: () => void;
+  onRetryWrong: () => void;
+  onRetryFlagged: () => void;
 }
 
 export function ReviewView({
@@ -16,11 +21,24 @@ export function ReviewView({
   wrongCount,
   wrongAnswers,
   allAnswered,
+  categoryStats,
+  flaggedCount,
   onResume,
   onStartOver,
+  onRetryWrong,
+  onRetryFlagged,
 }: ReviewViewProps) {
   const accuracy =
     answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+
+  const sortedCategories = Object.entries(categoryStats)
+    .map(([name, stats]) => {
+      const answered = stats.correct + stats.wrong;
+      const accuracy = answered > 0 ? Math.round((stats.correct / answered) * 100) : -1;
+      return { name, ...stats, answered, accuracy };
+    })
+    .filter((c) => c.answered > 0)
+    .sort((a, b) => a.accuracy - b.accuracy);
 
   return (
     <div>
@@ -46,6 +64,44 @@ export function ReviewView({
           <div className="text-sm text-gray-500">Accuracy</div>
         </div>
       </div>
+
+      {sortedCategories.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 text-lg font-semibold text-aws-dark">
+            Category Breakdown
+          </h2>
+          <div className="rounded-xl bg-white shadow-sm">
+            {sortedCategories.map((cat, i) => {
+              const colorClass =
+                cat.accuracy >= 80
+                  ? "text-correct"
+                  : cat.accuracy >= 50
+                    ? "text-amber-500"
+                    : "text-incorrect";
+              return (
+                <div
+                  key={cat.name}
+                  className={`flex items-center justify-between px-5 py-3 ${
+                    i < sortedCategories.length - 1 ? "border-b border-gray-100" : ""
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-800">
+                      {cat.name}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {cat.correct} correct, {cat.wrong} wrong / {cat.total} total
+                    </div>
+                  </div>
+                  <div className={`text-lg font-bold ${colorClass}`}>
+                    {cat.accuracy}%
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {wrongAnswers.length > 0 && (
         <div className="mb-6">
@@ -96,6 +152,22 @@ export function ReviewView({
       )}
 
       <div className="flex flex-col gap-3">
+        {wrongAnswers.length > 0 && (
+          <button
+            onClick={onRetryWrong}
+            className="min-h-[48px] w-full rounded-xl bg-red-500 px-8 py-4 text-lg font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-105 active:scale-[0.98]"
+          >
+            Retry Wrong Answers ({wrongAnswers.length})
+          </button>
+        )}
+        {flaggedCount > 0 && (
+          <button
+            onClick={onRetryFlagged}
+            className="min-h-[48px] w-full rounded-xl bg-amber-500 px-8 py-4 text-lg font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-105 active:scale-[0.98]"
+          >
+            Practice Flagged ({flaggedCount})
+          </button>
+        )}
         {!allAnswered && (
           <button
             onClick={onResume}

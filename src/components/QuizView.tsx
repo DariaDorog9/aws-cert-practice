@@ -18,8 +18,12 @@ interface QuizViewProps {
   wrongCount: number;
   shuffledQuestions: Question[];
   questionStatusMap: Record<number, "correct" | "wrong">;
+  flaggedQuestions: Set<number>;
+  isFlagged: boolean;
+  onToggleFlag: () => void;
   onSelectAnswer: (optionId: string) => void;
   onCheckAnswer: () => void;
+  onClearAnswer: () => void;
   onNextQuestion: () => void;
   onStopAndReview: () => void;
   onJumpToQuestion: (index: number) => void;
@@ -37,8 +41,12 @@ export function QuizView({
   wrongCount,
   shuffledQuestions,
   questionStatusMap,
+  flaggedQuestions,
+  isFlagged,
+  onToggleFlag,
   onSelectAnswer,
   onCheckAnswer,
+  onClearAnswer,
   onNextQuestion,
   onStopAndReview,
   onJumpToQuestion,
@@ -60,13 +68,35 @@ export function QuizView({
         onOpenDrawer={() => setDrawerOpen(true)}
       />
 
-      <div className="text-center">
+      <div className="relative text-center">
         <div className="text-sm text-gray-500">
           Question {currentIndex + 1} of {totalQuestions}
         </div>
         <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-aws-orange">
           {currentQuestion.category}
         </div>
+        <button
+          onClick={onToggleFlag}
+          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-lg p-2 transition-colors hover:bg-gray-100"
+          aria-label={isFlagged ? "Unflag question" : "Flag question"}
+          title={isFlagged ? "Unflag question" : "Flag question"}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill={isFlagged ? "#F59E0B" : "none"}
+            stroke={isFlagged ? "#F59E0B" : "currentColor"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={isFlagged ? "" : "text-gray-400"}
+          >
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+            <line x1="4" y1="22" x2="4" y2="15" />
+          </svg>
+        </button>
       </div>
 
       <QuestionCard
@@ -95,20 +125,38 @@ export function QuizView({
       )}
 
       {!hasChecked ? (
-        <button
-          onClick={onCheckAnswer}
-          disabled={selectedAnswers.length === 0}
-          className="min-h-[48px] w-full rounded-xl bg-aws-orange px-8 py-4 text-lg font-bold text-aws-dark shadow-md transition-all hover:shadow-lg hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:hover:brightness-100"
-        >
-          Check Answer
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={onCheckAnswer}
+            disabled={selectedAnswers.length === 0}
+            className="min-h-[48px] w-full rounded-xl bg-aws-orange px-8 py-4 text-lg font-bold text-aws-dark shadow-md transition-all hover:shadow-lg hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:hover:brightness-100"
+          >
+            Check Answer
+          </button>
+          <button
+            onClick={onNextQuestion}
+            className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-8 py-4 text-base font-semibold text-gray-500 transition-all hover:border-gray-400 hover:text-gray-700 active:scale-[0.98]"
+          >
+            Skip
+          </button>
+        </div>
       ) : (
-        <button
-          onClick={onNextQuestion}
-          className="min-h-[48px] w-full rounded-xl bg-aws-dark px-8 py-4 text-lg font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98]"
-        >
-          Next Question
-        </button>
+        <div className="flex flex-col gap-3">
+          {!isCorrect && (
+            <button
+              onClick={onClearAnswer}
+              className="min-h-[48px] w-full rounded-xl border-2 border-aws-dark bg-white px-8 py-4 text-lg font-bold text-aws-dark shadow-md transition-all hover:bg-gray-50 hover:shadow-lg active:scale-[0.98]"
+            >
+              Clear Answer
+            </button>
+          )}
+          <button
+            onClick={onNextQuestion}
+            className="min-h-[48px] w-full rounded-xl bg-aws-dark px-8 py-4 text-lg font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 active:scale-[0.98]"
+          >
+            Next Question
+          </button>
+        </div>
       )}
 
       <QuestionDrawer
@@ -118,6 +166,7 @@ export function QuizView({
         questionStatusMap={questionStatusMap}
         currentIndex={currentIndex}
         onJumpToQuestion={onJumpToQuestion}
+        flaggedQuestions={flaggedQuestions}
       />
     </div>
   );
