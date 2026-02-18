@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Question } from "@/types";
 import { ProgressBar } from "./ProgressBar";
 import { QuestionCard } from "./QuestionCard";
+import { QuestionDrawer } from "./QuestionDrawer";
 
 interface QuizViewProps {
   currentQuestion: Question;
@@ -15,10 +16,13 @@ interface QuizViewProps {
   answeredCount: number;
   correctCount: number;
   wrongCount: number;
+  shuffledQuestions: Question[];
+  questionStatusMap: Record<number, "correct" | "wrong">;
   onSelectAnswer: (optionId: string) => void;
   onCheckAnswer: () => void;
   onNextQuestion: () => void;
   onStopAndReview: () => void;
+  onJumpToQuestion: (index: number) => void;
 }
 
 export function QuizView({
@@ -31,12 +35,16 @@ export function QuizView({
   answeredCount,
   correctCount,
   wrongCount,
+  shuffledQuestions,
+  questionStatusMap,
   onSelectAnswer,
   onCheckAnswer,
   onNextQuestion,
   onStopAndReview,
+  onJumpToQuestion,
 }: QuizViewProps) {
   const topRef = useRef<HTMLDivElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -49,10 +57,16 @@ export function QuizView({
         correctCount={correctCount}
         wrongCount={wrongCount}
         onStopAndReview={onStopAndReview}
+        onOpenDrawer={() => setDrawerOpen(true)}
       />
 
-      <div className="text-center text-sm text-gray-500">
-        Question {currentIndex + 1} of {totalQuestions}
+      <div className="text-center">
+        <div className="text-sm text-gray-500">
+          Question {currentIndex + 1} of {totalQuestions}
+        </div>
+        <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-aws-orange">
+          {currentQuestion.category}
+        </div>
       </div>
 
       <QuestionCard
@@ -96,6 +110,15 @@ export function QuizView({
           Next Question
         </button>
       )}
+
+      <QuestionDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        questions={shuffledQuestions}
+        questionStatusMap={questionStatusMap}
+        currentIndex={currentIndex}
+        onJumpToQuestion={onJumpToQuestion}
+      />
     </div>
   );
 }

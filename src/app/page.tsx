@@ -12,7 +12,9 @@ export default function Home() {
     return (
       <LandingView
         totalQuestions={session.totalQuestions}
-        onStart={session.startSession}
+        hasSavedSession={session.hasSavedSession}
+        onStart={() => session.startSession()}
+        onContinue={session.resumeSavedSession}
       />
     );
   }
@@ -44,10 +46,13 @@ export default function Home() {
       answeredCount={session.answeredCount}
       correctCount={session.correctCount}
       wrongCount={session.wrongCount}
+      shuffledQuestions={session.shuffledQuestions}
+      questionStatusMap={session.questionStatusMap}
       onSelectAnswer={session.selectAnswer}
       onCheckAnswer={session.checkAnswer}
       onNextQuestion={session.nextQuestion}
       onStopAndReview={session.stopAndReview}
+      onJumpToQuestion={session.jumpToQuestion}
     />
   );
 }

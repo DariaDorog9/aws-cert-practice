@@ -3,8 +3,21 @@ export interface Option {
   text: string;
 }
 
+export type Category =
+  | "Cloud Concepts"
+  | "Security & Compliance"
+  | "Compute"
+  | "Storage"
+  | "Networking"
+  | "Databases"
+  | "Management & Governance"
+  | "Billing & Pricing"
+  | "Machine Learning & AI"
+  | "Migration & Transfer";
+
 export interface Question {
   id: number;
+  category: Category;
   question: string;
   type: "single" | "multiple";
   options: Option[];
