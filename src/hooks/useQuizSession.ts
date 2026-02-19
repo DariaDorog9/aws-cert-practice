@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Question, ViewState, AnsweredQuestion } from "@/types";
 import { shuffle } from "@/lib/shuffle";
+import { useAuth } from "@/contexts/AuthContext";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import questionsData from "@/data/questions.json";
 
 const allQuestions = questionsData as Question[];
@@ -20,7 +23,9 @@ interface SavedSession {
   flaggedQuestions: number[];
 }
 
-function saveSession(data: SavedSession) {
+// --- localStorage helpers (guest mode) ---
+
+function saveSessionLocal(data: SavedSession) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
@@ -28,7 +33,7 @@ function saveSession(data: SavedSession) {
   }
 }
 
-function loadSession(): SavedSession | null {
+function loadSessionLocal(): SavedSession | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -38,9 +43,50 @@ function loadSession(): SavedSession | null {
   }
 }
 
-function clearSession() {
+function clearSessionLocal() {
   try {
     localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+// --- Firestore helpers (logged-in mode) ---
+
+function sessionDocRef(userId: string) {
+  if (!db) return null;
+  return doc(db, "users", userId, "sessions", "current");
+}
+
+async function saveSessionFirestore(userId: string, data: SavedSession) {
+  const ref = sessionDocRef(userId);
+  if (!ref) return;
+  try {
+    await setDoc(ref, data);
+  } catch {
+    // Firestore write failed — silently degrade
+  }
+}
+
+async function loadSessionFirestore(
+  userId: string
+): Promise<SavedSession | null> {
+  const ref = sessionDocRef(userId);
+  if (!ref) return null;
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return snap.data() as SavedSession;
+  } catch {
+    return null;
+  }
+}
+
+async function clearSessionFirestore(userId: string) {
+  const ref = sessionDocRef(userId);
+  if (!ref) return;
+  try {
+    await deleteDoc(ref);
   } catch {
     // ignore
   }
@@ -66,12 +112,35 @@ function shuffleByCategorySorted(questions: Question[]): Question[] {
   return result;
 }
 
+function restoreSession(saved: SavedSession) {
+  const questions = saved.questionOrder
+    .map((id) => questionsById.get(id))
+    .filter((q): q is Question => q !== undefined);
+
+  const wrongAnswerObjects = saved.wrongAnswers
+    .map((wa) => {
+      const q = questionsById.get(wa.questionId);
+      if (!q) return null;
+      return {
+        question: q,
+        selectedAnswers: wa.selectedAnswers,
+        isCorrect: false,
+      };
+    })
+    .filter((wa): wa is AnsweredQuestion => wa !== null);
+
+  return { questions, wrongAnswerObjects };
+}
+
 export type CategoryStats = Record<
   string,
   { total: number; correct: number; wrong: number }
 >;
 
 export function useQuizSession() {
+  const { user } = useAuth();
+  const userId = user?.uid ?? null;
+
   const [view, setView] = useState<ViewState>("landing");
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -93,23 +162,42 @@ export function useQuizSession() {
   const [clearedQuestions, setClearedQuestions] = useState<Set<number>>(
     new Set()
   );
+  const [sessionLoading, setSessionLoading] = useState(false);
 
-  // Check for saved session on mount
+  // Track the userId used for the last session check to re-check on auth change
+  const lastCheckedUserId = useRef<string | null | undefined>(undefined);
+
+  // Check for saved session on mount and when auth state changes
   useEffect(() => {
-    const saved = loadSession();
-    if (saved && saved.questionOrder.length > 0) {
-      setHasSavedSession(true);
+    // Skip if we already checked for this user
+    if (lastCheckedUserId.current === userId) return;
+    lastCheckedUserId.current = userId;
+
+    if (userId) {
+      // Logged in — check Firestore
+      setSessionLoading(true);
+      loadSessionFirestore(userId).then((saved) => {
+        if (saved && saved.questionOrder.length > 0) {
+          setHasSavedSession(true);
+        } else {
+          // Fall back to checking localStorage
+          const local = loadSessionLocal();
+          setHasSavedSession(!!local && local.questionOrder.length > 0);
+        }
+        setSessionLoading(false);
+      });
+    } else {
+      // Guest — check localStorage
+      const saved = loadSessionLocal();
+      setHasSavedSession(!!saved && saved.questionOrder.length > 0);
     }
-  }, []);
+  }, [userId]);
 
   const currentQuestion = shuffledQuestions[currentIndex] ?? null;
 
-  // Save progress whenever relevant state changes
-  useEffect(() => {
-    if (view !== "quiz" && view !== "review") return;
-    if (shuffledQuestions.length === 0) return;
-
-    saveSession({
+  // Build session data for saving
+  const buildSessionData = useCallback((): SavedSession => {
+    return {
       questionOrder: shuffledQuestions.map((q) => q.id),
       currentIndex,
       answeredCount,
@@ -121,9 +209,8 @@ export function useQuizSession() {
         selectedAnswers: wa.selectedAnswers,
       })),
       flaggedQuestions: Array.from(flaggedQuestions),
-    });
+    };
   }, [
-    view,
     shuffledQuestions,
     currentIndex,
     answeredCount,
@@ -133,6 +220,20 @@ export function useQuizSession() {
     wrongAnswers,
     flaggedQuestions,
   ]);
+
+  // Save progress whenever relevant state changes
+  useEffect(() => {
+    if (view !== "quiz" && view !== "review") return;
+    if (shuffledQuestions.length === 0) return;
+
+    const data = buildSessionData();
+
+    if (userId) {
+      saveSessionFirestore(userId, data);
+    }
+    // Always save to localStorage as fallback
+    saveSessionLocal(data);
+  }, [view, buildSessionData, userId]);
 
   const toggleFlag = useCallback((questionId: number) => {
     setFlaggedQuestions((prev) => {
@@ -162,14 +263,8 @@ export function useQuizSession() {
     return stats;
   }, [shuffledQuestions, questionStatusMap]);
 
-  const resumeSavedSession = useCallback(() => {
-    const saved = loadSession();
-    if (!saved) return;
-
-    const questions = saved.questionOrder
-      .map((id) => questionsById.get(id))
-      .filter((q): q is Question => q !== undefined);
-
+  const applySession = useCallback((saved: SavedSession) => {
+    const { questions, wrongAnswerObjects } = restoreSession(saved);
     if (questions.length === 0) return;
 
     setShuffledQuestions(questions);
@@ -178,25 +273,29 @@ export function useQuizSession() {
     setCorrectCount(saved.correctCount);
     setWrongCount(saved.wrongCount);
     setQuestionStatusMap(saved.questionStatusMap);
-    setWrongAnswers(
-      saved.wrongAnswers
-        .map((wa) => {
-          const q = questionsById.get(wa.questionId);
-          if (!q) return null;
-          return {
-            question: q,
-            selectedAnswers: wa.selectedAnswers,
-            isCorrect: false,
-          };
-        })
-        .filter((wa): wa is AnsweredQuestion => wa !== null)
-    );
+    setWrongAnswers(wrongAnswerObjects);
     setFlaggedQuestions(new Set(saved.flaggedQuestions ?? []));
     setSelectedAnswers([]);
     setHasChecked(false);
     setIsCorrect(false);
     setView("quiz");
   }, []);
+
+  const resumeSavedSession = useCallback(async () => {
+    if (userId) {
+      // Try Firestore first (cloud is source of truth)
+      const cloudSession = await loadSessionFirestore(userId);
+      if (cloudSession) {
+        applySession(cloudSession);
+        return;
+      }
+    }
+    // Fall back to localStorage
+    const local = loadSessionLocal();
+    if (local) {
+      applySession(local);
+    }
+  }, [userId, applySession]);
 
   const startSession = useCallback(() => {
     setShuffledQuestions(shuffleByCategorySorted([...allQuestions]));
@@ -381,10 +480,13 @@ export function useQuizSession() {
   }, []);
 
   const startOver = useCallback(() => {
-    clearSession();
+    clearSessionLocal();
+    if (userId) {
+      clearSessionFirestore(userId);
+    }
     setHasSavedSession(false);
     startSession();
-  }, [startSession]);
+  }, [startSession, userId]);
 
   const retryWrongAnswers = useCallback(() => {
     const wrongQuestions = wrongAnswers.map((wa) => wa.question);
@@ -439,6 +541,7 @@ export function useQuizSession() {
     hasSavedSession,
     flaggedQuestions,
     categoryStats,
+    sessionLoading,
     totalQuestions: allQuestions.length,
     startSession,
     resumeSavedSession,

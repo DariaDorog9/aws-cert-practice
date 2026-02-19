@@ -1,12 +1,19 @@
 "use client";
 
 import { useQuizSession } from "@/hooks/useQuizSession";
+import { useAuth } from "@/contexts/AuthContext";
 import { LandingView } from "@/components/LandingView";
 import { QuizView } from "@/components/QuizView";
 import { ReviewView } from "@/components/ReviewView";
 
 export default function Home() {
+  const { user, loading: authLoading, signIn, signOut } = useAuth();
   const session = useQuizSession();
+
+  // Wait for auth + session state to settle before showing landing
+  if (authLoading || session.sessionLoading) {
+    return null;
+  }
 
   if (session.view === "landing") {
     return (
@@ -15,6 +22,10 @@ export default function Home() {
         hasSavedSession={session.hasSavedSession}
         onStart={() => session.startSession()}
         onContinue={session.resumeSavedSession}
+        user={user}
+        showAuth={!!process.env.NEXT_PUBLIC_FIREBASE_API_KEY}
+        onSignIn={signIn}
+        onSignOut={signOut}
       />
     );
   }
