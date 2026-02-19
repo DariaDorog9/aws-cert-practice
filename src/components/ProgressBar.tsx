@@ -1,3 +1,5 @@
+import { DarkModeToggle } from "./DarkModeToggle";
+
 interface ProgressBarProps {
   answeredCount: number;
   correctCount: number;
@@ -21,27 +23,30 @@ export function ProgressBar({
           <span className="text-green-400">{correctCount} correct</span>
           <span className="text-red-400">{wrongCount} wrong</span>
         </div>
-        <button
-          onClick={onOpenDrawer}
-          className="rounded-lg p-1.5 transition-colors hover:bg-white/10"
-          aria-label="Open question list"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex items-center gap-1">
+          <DarkModeToggle className="text-white hover:!bg-white/10 dark:hover:!bg-white/10" />
+          <button
+            onClick={onOpenDrawer}
+            className="rounded-lg p-1.5 transition-colors hover:bg-white/10"
+            aria-label="Open question list"
           >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
       </div>
       <button
         onClick={onStopAndReview}

@@ -14,8 +14,8 @@ export function QuestionCard({
   onSelectAnswer,
 }: QuestionCardProps) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm">
-      <div className="mb-1 text-sm font-medium text-gray-500">
+    <div className="rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm">
+      <div className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">
         {question.type === "multiple"
           ? "Select all that apply"
           : "Select one answer"}
@@ -29,18 +29,18 @@ export function QuestionCard({
           const isCorrectAnswer = question.correctAnswers.includes(option.id);
 
           let style =
-            "border-gray-200 bg-gray-50 hover:border-selected hover:bg-blue-50";
+            "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-selected hover:bg-blue-50 dark:hover:bg-blue-900/30";
 
           if (hasChecked) {
             if (isCorrectAnswer) {
-              style = "border-correct bg-green-50 text-correct";
+              style = "border-correct bg-green-50 dark:bg-green-900/30 text-correct";
             } else if (isSelected) {
-              style = "border-incorrect bg-red-50 text-incorrect";
+              style = "border-incorrect bg-red-50 dark:bg-red-900/30 text-incorrect";
             } else {
-              style = "border-gray-200 bg-gray-50 opacity-60";
+              style = "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 opacity-60";
             }
           } else if (isSelected) {
-            style = "border-selected bg-blue-50 ring-2 ring-selected";
+            style = "border-selected bg-blue-50 dark:bg-blue-900/30 ring-2 ring-selected";
           }
 
           return (

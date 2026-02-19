@@ -1,4 +1,5 @@
 import { User } from "firebase/auth";
+import { DarkModeToggle } from "./DarkModeToggle";
 
 interface LandingViewProps {
   totalQuestions: number;
@@ -23,32 +24,35 @@ export function LandingView({
 }: LandingViewProps) {
   return (
     <div className="flex flex-col items-center text-center">
-      {/* User info bar */}
-      {showAuth && user && (
-        <div className="flex w-full items-center justify-end gap-2 mb-2">
-          {user.photoURL && (
-            <img
-              src={user.photoURL}
-              alt=""
-              className="h-7 w-7 rounded-full"
-              referrerPolicy="no-referrer"
-            />
-          )}
-          <span className="text-sm text-gray-600 truncate max-w-[160px]">
-            {user.displayName || user.email}
-          </span>
-          <button
-            onClick={onSignOut}
-            className="text-sm text-gray-400 underline hover:text-gray-600"
-          >
-            Sign out
-          </button>
-        </div>
-      )}
+      {/* Top bar: user info + dark mode toggle */}
+      <div className="flex w-full items-center justify-end gap-2 mb-2">
+        {showAuth && user && (
+          <>
+            {user.photoURL && (
+              <img
+                src={user.photoURL}
+                alt=""
+                className="h-7 w-7 rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <span className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[160px]">
+              {user.displayName || user.email}
+            </span>
+            <button
+              onClick={onSignOut}
+              className="text-sm text-gray-400 dark:text-gray-500 underline hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              Sign out
+            </button>
+          </>
+        )}
+        <DarkModeToggle />
+      </div>
 
       <div className="mb-6 mt-8">
         <div className="mb-4 text-5xl">&#9729;&#65039;</div>
-        <h1 className="mb-2 text-3xl font-bold text-aws-dark">
+        <h1 className="mb-2 text-3xl font-bold text-aws-dark dark:text-gray-100">
           AWS Certification
         </h1>
         <h2 className="text-xl font-semibold text-aws-orange">
@@ -56,7 +60,7 @@ export function LandingView({
         </h2>
       </div>
 
-      <p className="mb-6 text-gray-600">{totalQuestions} questions</p>
+      <p className="mb-6 text-gray-600 dark:text-gray-300">{totalQuestions} questions</p>
 
       <div className="flex w-full flex-col gap-3">
         {hasSavedSession && (
@@ -71,7 +75,7 @@ export function LandingView({
           onClick={onStart}
           className={`min-h-[48px] w-full rounded-xl px-8 py-4 text-lg font-bold shadow-md transition-all hover:shadow-lg active:scale-[0.98] ${
             hasSavedSession
-              ? "bg-gray-200 text-aws-dark hover:bg-gray-300"
+              ? "bg-gray-200 dark:bg-gray-600 text-aws-dark dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-500"
               : "bg-aws-orange text-aws-dark hover:brightness-105"
           }`}
         >
@@ -82,7 +86,7 @@ export function LandingView({
         {showAuth && !user && (
           <button
             onClick={onSignIn}
-            className="mt-2 flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-8 py-4 text-base font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow-md active:scale-[0.98]"
+            className="mt-2 flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 px-8 py-4 text-base font-medium text-gray-700 dark:text-gray-200 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
               <path

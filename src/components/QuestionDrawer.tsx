@@ -72,7 +72,7 @@ export function QuestionDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative h-full w-full max-w-sm overflow-y-auto bg-white shadow-xl">
+      <div className="relative h-full w-full max-w-sm overflow-y-auto bg-white dark:bg-gray-800 shadow-xl">
         <div className="sticky top-0 z-10 flex items-center justify-between bg-aws-dark px-4 py-3 text-white">
           <h2 className="font-semibold">All Questions</h2>
           <button
@@ -110,14 +110,14 @@ export function QuestionDrawer({
             <div key={group.category}>
               <button
                 onClick={() => toggleCategory(group.category)}
-                className="sticky top-[52px] z-[5] flex w-full items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2"
+                className="sticky top-[52px] z-[5] flex w-full items-center justify-between border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-4 py-2"
               >
                 <div className="flex flex-col items-start">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {group.category}
                   </span>
                   {answeredInGroup > 0 && (
-                    <span className="mt-0.5 text-[11px] text-gray-400">
+                    <span className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
                       <span className="text-correct">{correctInGroup}</span>
                       {" / "}
                       <span className="text-incorrect">{wrongInGroup}</span>
@@ -126,7 +126,7 @@ export function QuestionDrawer({
                     </span>
                   )}
                   {answeredInGroup === 0 && (
-                    <span className="mt-0.5 text-[11px] text-gray-400">
+                    <span className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
                       {group.items.length} questions
                     </span>
                   )}
@@ -141,13 +141,13 @@ export function QuestionDrawer({
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`text-gray-400 transition-transform ${isCollapsed ? "" : "rotate-180"}`}
+                  className={`text-gray-400 dark:text-gray-500 transition-transform ${isCollapsed ? "" : "rotate-180"}`}
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </button>
               {!isCollapsed && (
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                   {group.items.map(({ question: q, index }) => {
                     const status = questionStatusMap[q.id];
                     const isCurrent = index === currentIndex;
@@ -163,23 +163,23 @@ export function QuestionDrawer({
                             onJumpToQuestion(index);
                             onClose();
                           }}
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${
-                            isCurrent ? "bg-blue-50" : ""
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                            isCurrent ? "bg-blue-50 dark:bg-blue-900/30" : ""
                           }`}
                         >
                           <span className="mt-0.5 flex-shrink-0">
                             {status === "correct" && (
-                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs text-correct">
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50 text-xs text-correct">
                                 &#10003;
                               </span>
                             )}
                             {status === "wrong" && (
-                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs text-incorrect">
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50 text-xs text-incorrect">
                                 &#10007;
                               </span>
                             )}
                             {!status && (
-                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400">
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-600 text-xs text-gray-400 dark:text-gray-500">
                                 &#8226;
                               </span>
                             )}
@@ -187,8 +187,8 @@ export function QuestionDrawer({
                           <span
                             className={`flex-1 text-sm ${
                               isCurrent
-                                ? "font-medium text-aws-dark"
-                                : "text-gray-700"
+                                ? "font-medium text-aws-dark dark:text-gray-100"
+                                : "text-gray-700 dark:text-gray-200"
                             }`}
                           >
                             {truncated}

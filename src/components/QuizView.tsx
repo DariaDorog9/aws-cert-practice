@@ -69,7 +69,7 @@ export function QuizView({
       />
 
       <div className="relative text-center">
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           Question {currentIndex + 1} of {totalQuestions}
         </div>
         <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-aws-orange">
@@ -77,7 +77,7 @@ export function QuizView({
         </div>
         <button
           onClick={onToggleFlag}
-          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-lg p-2 transition-colors hover:bg-gray-100"
+          className="absolute right-0 top-1/2 -translate-y-1/2 rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
           aria-label={isFlagged ? "Unflag question" : "Flag question"}
           title={isFlagged ? "Unflag question" : "Flag question"}
         >
@@ -91,7 +91,7 @@ export function QuizView({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={isFlagged ? "" : "text-gray-400"}
+            className={isFlagged ? "" : "text-gray-400 dark:text-gray-500"}
           >
             <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
             <line x1="4" y1="22" x2="4" y2="15" />
@@ -110,8 +110,8 @@ export function QuizView({
         <div
           className={`rounded-xl p-4 text-center font-semibold ${
             isCorrect
-              ? "bg-green-50 text-correct"
-              : "bg-red-50 text-incorrect"
+              ? "bg-green-50 dark:bg-green-900/30 text-correct"
+              : "bg-red-50 dark:bg-red-900/30 text-incorrect"
           }`}
         >
           {isCorrect ? "Correct!" : "Incorrect"}
@@ -119,7 +119,7 @@ export function QuizView({
       )}
 
       {hasChecked && currentQuestion.explanation && (
-        <div className="rounded-xl bg-blue-50 p-4 text-sm leading-relaxed text-gray-700">
+        <div className="rounded-xl bg-blue-50 dark:bg-blue-900/30 p-4 text-sm leading-relaxed text-gray-700 dark:text-gray-200">
           {currentQuestion.explanation}
         </div>
       )}
@@ -135,7 +135,7 @@ export function QuizView({
           </button>
           <button
             onClick={onNextQuestion}
-            className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 bg-white px-8 py-4 text-base font-semibold text-gray-500 transition-all hover:border-gray-400 hover:text-gray-700 active:scale-[0.98]"
+            className="min-h-[48px] w-full rounded-xl border-2 border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 px-8 py-4 text-base font-semibold text-gray-500 dark:text-gray-400 transition-all hover:border-gray-400 dark:hover:border-gray-400 hover:text-gray-700 dark:hover:text-gray-200 active:scale-[0.98]"
           >
             Skip
           </button>
@@ -145,7 +145,7 @@ export function QuizView({
           {!isCorrect && (
             <button
               onClick={onClearAnswer}
-              className="min-h-[48px] w-full rounded-xl border-2 border-aws-dark bg-white px-8 py-4 text-lg font-bold text-aws-dark shadow-md transition-all hover:bg-gray-50 hover:shadow-lg active:scale-[0.98]"
+              className="min-h-[48px] w-full rounded-xl border-2 border-aws-dark dark:border-gray-500 bg-white dark:bg-gray-800 px-8 py-4 text-lg font-bold text-aws-dark dark:text-gray-100 shadow-md transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-lg active:scale-[0.98]"
             >
               Clear Answer
             </button>

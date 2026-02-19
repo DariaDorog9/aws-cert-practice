@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: #f8fafc;
   --color-foreground: #0f172a;
-  --color-aws-orange: #ff9900;
+  --color-aws-orange: #38bdf8;
   --color-aws-dark: #232f3e;
   --color-aws-navy: #1a2332;
   --color-correct: #16a34a;
@@ -16,4 +18,9 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.dark body {
+  background: #0f172a;
+  color: #f1f5f9;
 }

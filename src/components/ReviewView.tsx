@@ -42,35 +42,35 @@ export function ReviewView({
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-aws-dark">Session Review</h1>
+      <h1 className="mb-6 text-2xl font-bold text-aws-dark dark:text-gray-100">Session Review</h1>
 
-      <div className="mb-6 rounded-xl bg-white p-5 shadow-sm">
+      <div className="mb-6 rounded-xl bg-white dark:bg-gray-800 p-5 shadow-sm">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold">{answeredCount}</div>
-            <div className="text-sm text-gray-500">Answered</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Answered</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-correct">{correctCount}</div>
-            <div className="text-sm text-gray-500">Correct</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Correct</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-incorrect">{wrongCount}</div>
-            <div className="text-sm text-gray-500">Wrong</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Wrong</div>
           </div>
         </div>
-        <div className="mt-4 border-t pt-4 text-center">
-          <div className="text-3xl font-bold text-aws-dark">{accuracy}%</div>
-          <div className="text-sm text-gray-500">Accuracy</div>
+        <div className="mt-4 border-t dark:border-gray-700 pt-4 text-center">
+          <div className="text-3xl font-bold text-aws-dark dark:text-gray-100">{accuracy}%</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Accuracy</div>
         </div>
       </div>
 
       {sortedCategories.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-3 text-lg font-semibold text-aws-dark">
+          <h2 className="mb-3 text-lg font-semibold text-aws-dark dark:text-gray-100">
             Category Breakdown
           </h2>
-          <div className="rounded-xl bg-white shadow-sm">
+          <div className="rounded-xl bg-white dark:bg-gray-800 shadow-sm">
             {sortedCategories.map((cat, i) => {
               const colorClass =
                 cat.accuracy >= 80
@@ -82,14 +82,14 @@ export function ReviewView({
                 <div
                   key={cat.name}
                   className={`flex items-center justify-between px-5 py-3 ${
-                    i < sortedCategories.length - 1 ? "border-b border-gray-100" : ""
+                    i < sortedCategories.length - 1 ? "border-b border-gray-100 dark:border-gray-700" : ""
                   }`}
                 >
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
                       {cat.name}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 dark:text-gray-500">
                       {cat.correct} correct, {cat.wrong} wrong / {cat.total} total
                     </div>
                   </div>
@@ -112,7 +112,7 @@ export function ReviewView({
             {wrongAnswers.map((item, index) => (
               <div
                 key={index}
-                className="rounded-xl border-2 border-red-100 bg-white p-5 shadow-sm"
+                className="rounded-xl border-2 border-red-100 dark:border-red-900/50 bg-white dark:bg-gray-800 p-5 shadow-sm"
               >
                 <p className="mb-3 font-semibold">{item.question.question}</p>
                 <div className="mb-2 text-sm">
@@ -134,7 +134,7 @@ export function ReviewView({
                     .join(", ")}
                 </div>
                 {item.question.explanation && (
-                  <div className="rounded-lg bg-blue-50 p-3 text-sm text-gray-700">
+                  <div className="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-3 text-sm text-gray-700 dark:text-gray-200">
                     {item.question.explanation}
                   </div>
                 )}
@@ -145,7 +145,7 @@ export function ReviewView({
       )}
 
       {wrongAnswers.length === 0 && (
-        <div className="mb-6 rounded-xl bg-green-50 p-5 text-center text-correct">
+        <div className="mb-6 rounded-xl bg-green-50 dark:bg-green-900/30 p-5 text-center text-correct">
           <div className="text-2xl font-bold">Perfect score!</div>
           <p className="text-sm">You got every question right.</p>
         </div>
